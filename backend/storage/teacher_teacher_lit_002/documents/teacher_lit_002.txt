@@ -1,0 +1,1 @@
+POETRY_SECRET: The rose is the symbol of love.

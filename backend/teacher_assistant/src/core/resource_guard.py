@@ -26,7 +26,10 @@ class ResourceGuard:
         self.rate_limit_window = 60 # 1 minute
         self.max_requests_per_min = 60 # 1 req/sec per IP average
         
-        # Cool Down Mode
+        # Queue System
+        self.pending_queue = [] # List of ticket_ids
+        self.avg_processing_time = 2.0 # seconds
+        self.processed_count_window = 0
         self.cool_down_until = 0
 
     def check_health(self) -> Tuple[bool, str]:
@@ -53,13 +56,57 @@ class ResourceGuard:
         
         return True, "Healthy"
 
-    def acquire_slot(self) -> bool:
-        """Concurrency control."""
+    def get_queue_status(self, ticket_id: str) -> Dict:
         with self.lock:
+            try:
+                pos = self.pending_queue.index(ticket_id)
+                return {
+                    "status": "queued",
+                    "position": pos + 1,
+                    "wait_time": (pos + 1) * self.avg_processing_time
+                }
+            except ValueError:
+                return {"status": "unknown", "position": -1, "wait_time": 0}
+
+    def join_queue(self) -> str:
+        """User joins the waiting line. Returns a ticket ID."""
+        import uuid
+        ticket_id = str(uuid.uuid4())
+        with self.lock:
+            self.pending_queue.append(ticket_id)
+        return ticket_id
+
+    def leave_queue(self, ticket_id: str):
+        with self.lock:
+            if ticket_id in self.pending_queue:
+                self.pending_queue.remove(ticket_id)
+
+    def acquire_slot(self, ticket_id: str = None) -> Tuple[bool, str]:
+        """
+        Concurrency control with Queue Awareness.
+        Returns: (Success, Message)
+        """
+        with self.lock:
+            # If system is full
             if self.active_requests >= self.max_concurrent:
-                return False
+                return False, "System Busy"
+
+            # If there is a queue, ONLY the head of the queue can enter
+            if self.pending_queue:
+                if not ticket_id: 
+                    # Newcomer trying to skip line? No.
+                    return False, "Queue Required"
+                
+                if ticket_id != self.pending_queue[0]:
+                    # User is in queue but not first
+                    return False, "Wait Your Turn"
+                
+                # User is first! Let them in.
+                self.pending_queue.pop(0)
+
+            # Grant Access
             self.active_requests += 1
-            return True
+            return True, "Access Granted"
 
     def release_slot(self):
         with self.lock:

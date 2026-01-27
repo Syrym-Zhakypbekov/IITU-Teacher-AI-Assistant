@@ -7,7 +7,7 @@ class OllamaClient:
     def __init__(self):
         self.embed_model = "nomic-embed-text"
         # UPGRADED: 2x smarter than 0.5b, still fast on CPU
-        self.chat_model = "llama3.2:1b-instruct-q5_1"
+        self.chat_model = "qwen2.5-coder:0.5b-instruct-fp16"
 
     def get_embedding(self, text: str) -> List[float]:
         # BLAZING FAST: Using GPU for single embedding

@@ -1,0 +1,1 @@
+IITU AI Policy: Students must use local neural engines for all homework.

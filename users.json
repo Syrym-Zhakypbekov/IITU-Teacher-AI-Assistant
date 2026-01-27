@@ -1,0 +1,17 @@
+{
+    "admin@iitu.kz": {
+        "password": "$pbkdf2-sha256$29000$xZgzRgihtPaeM0aoldIaIw$gS9Ri.nGFPXWoRrz3JraQWx4ohsEl7fJHmrnEv25iYw",
+        "name": "Super Admin",
+        "role": "admin"
+    },
+    "admin.test@iitu.kz": {
+        "password": "$pbkdf2-sha256$29000$XWsNodR67/2/l1LqHcO4Vw$YAlEDFu.GILAd28.Ebu6Vt3pk6wT7epq.UiAdsMSNvk",
+        "name": "Super Admin",
+        "role": "admin"
+    },
+    "teacher.math@iitu.kz": {
+        "password": "$pbkdf2-sha256$29000$975XSgmBEOL8X6s1xth7Dw$yWgVlZilvnfv/6Agc0gDU5T8ok.QSdRlt2Hdn4vPdMw",
+        "name": "Math Teacher",
+        "role": "teacher"
+    }
+}

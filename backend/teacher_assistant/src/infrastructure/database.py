@@ -80,3 +80,11 @@ class VectorDatabase:
         if self.table_name not in self.db.table_names():
             return 0
         return len(self.db.open_table(self.table_name))
+
+    def delete_by_source(self, filename: str):
+        """Neural Wipe: Delete all chunks associated with a specific file."""
+        if self.table_name not in self.db.table_names():
+            return
+        tbl = self.db.open_table(self.table_name)
+        # Use single quotes for the filename in the SQL-like filter
+        tbl.delete(f"source = '{filename}'")

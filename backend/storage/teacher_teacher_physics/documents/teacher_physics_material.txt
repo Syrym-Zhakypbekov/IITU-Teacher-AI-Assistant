@@ -1,0 +1,1 @@
+Newton's First Law states that an object at rest stays at rest like a stone. Gravity is 9.8 m/s^2.
