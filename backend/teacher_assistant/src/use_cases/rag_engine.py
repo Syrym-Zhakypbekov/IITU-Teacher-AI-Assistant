@@ -1,93 +1,112 @@
-from ..infrastructure.database import VectorStore
-from ..infrastructure.ollama_client import OllamaProvider
-import pandas as pd
+from ..infrastructure.ollama_client import OllamaClient
+from ..infrastructure.database import VectorDatabase
+from ..infrastructure.smart_cache import SmartCache
+from ..core.models import ChatResponse
+from ..core.cost_manager import SmartCostManager
 import re
 
-class RAGEngine:
-    def __init__(self, db: VectorStore, ai: OllamaProvider):
+class RAGService:
+    def __init__(self, db: VectorDatabase, llm: OllamaClient):
         self.db = db
-        self.ai = ai
+        self.llm = llm
+        self.cache = SmartCache()  # SQLite persistent cache
+        self.cost_manager = SmartCostManager() # Brain for efficiency
 
-    def _extract_potential_names(self, query: str):
-        # Simple regex for Capitalized names, can be improved with a model
-        return re.findall(r'[A-Z][a-z]+(?:\s[A-Z][a-z]+)*', query)
+    def answer_question(self, query: str, force_cache_only: bool = False) -> ChatResponse:
+        # 0. COST CHECK: Skip RAG for simple greetings
+        if self.cost_manager.should_skip_rag(query):
+            simple_response = self.llm.chat("You are a helpful assistant.", query)
+            return ChatResponse(
+                response=simple_response,
+                references=[],
+                status="chat_simple"
+            )
 
-    def process_query(self, query: str):
-        # 1. AMBIGUITY DETECTION (The "Same Name" Filter)
-        # We check if the query contains a name that might have multiple records
-        extracted_names = self._extract_potential_names(query)
+        # 1. Embed query (GPU - fast) - DO THIS FIRST for semantic cache
+        vector = self.llm.get_embedding(query)
+
+        # 2. CHECK SQLITE CACHE (Semantic & Exact)
+        # Try exact first (fastest)
+        cached = self.cache.get(query)
+        if not cached:
+            # Try semantic (smarter)
+            cached = self.cache.get_semantic(vector, threshold=0.82) # Tuned threshold
+            
+        if cached:
+            msg_prefix = "\n\n_[Cached response]_" if cached.get('type') == 'exact' else f"\n\n_[Cached (Semantic {cached.get('score', 0):.2f})]_"
+            return ChatResponse(
+                response=cached['response'] + msg_prefix,
+                references=cached['references'],
+                status="cached"
+            )
         
-        # 2. TRAFFIC COP (Intent & Ambiguity Check)
-        intent_status = self.ai.check_intent(query)
-        if "CLEAR" not in intent_status.upper() and len(intent_status) > 10:
-             return {
-                 "response": intent_status,
-                 "references": [],
-                 "status": "ambiguous"
-             }
-
-        # 3. ADVANCED HYBRID SEARCH
-        # We use the extracted names to force FTS to prioritize those specific strings
-        vec = self.ai.get_embedding(query)
+        # GUARD: If Overheating, REFUSE to generate new answer
+        if force_cache_only:
+             return ChatResponse(
+                response="⚠️ System Overload Protection Active. I am cooling down. Please ask a simpler question or try again in 10 seconds.",
+                references=[],
+                status="throttled_cpu_hot"
+            )
         
-        # We search for the vector but also specifically look for any names we found
-        search_filter = ""
-        if extracted_names:
-            # Create a filter that looks for any of the extracted names in the content
-            name_filters = [f"content LIKE '%{name}%'" for name in extracted_names]
-            search_filter = " OR ".join(name_filters)
-
-        search_results = self.db.search(vec, query) # Base search uses query text for FTS
+        # 3. SMART RETRIEVE with multi-signal scoring
+        results = self.db.smart_search(vector, query, limit=12)
         
-        if search_results.empty:
-            return {
-                "response": "I couldn't find any information regarding that specific request.",
-                "references": [],
-                "status": "not_found"
-            }
+        if results.empty:
+            return ChatResponse(
+                response="I couldn't find relevant information in the materials.",
+                references=[],
+                status="no_context"
+            )
 
-        # 4. IDENTITY VERIFICATION (The "Double Judge")
-        # We group results by tutor to see if we have multiple "candidates" with the same name
-        validated_context = []
+        # 4. SMART CONTEXT: Dynamic budget allocation
+        budget = self.cost_manager.allocate_budget(results)
+        MAX_CONTEXT = budget['max_context']
+        
+        context_blocks = []
         references = []
-        unique_tutors = search_results['tutor'].unique()
-
-        if len(unique_tutors) > 1 and any(name in query for name in extracted_names):
-            # Potential collision detected - multiple tutors found for one name search
-            collision_msg = "I found multiple teachers with similar names. Which one did you mean?\n"
-            for t in unique_tutors:
-                topics = search_results[search_results['tutor'] == t]['topic'].unique()
-                collision_msg += f"- {t} (Specializing in: {', '.join(topics)})\n"
-            
-            return {
-                "response": collision_msg,
-                "references": list(unique_tutors),
-                "status": "collision"
-            }
-
-        # 5. RERANKING (Context Verification)
-        for _, row in search_results.iterrows():
-            # The Reranker model (Qwen3-Reranker-8B) evaluates the pair
-            verdict = self.ai.rerank_score(query, row['content'])
-            
-            # Explicitly check for negative matches in the reranker output
-            if "YES" in verdict.upper() or "RELEVANT" in verdict.upper():
-                validated_context.append(row['content'])
-                references.append(f"{row['tutor']} (Topic: {row['topic']})")
-
-        if not validated_context:
-             return {
-                "response": "I found some records, but they don't seem to match your specific question accurately. Could you provide a full name or more context?",
-                "references": [],
-                "status": "filtered"
-            }
-
-        # 6. FINAL GENERATION (Ministral-3B)
-        context_str = "\n---\n".join(validated_context)
-        answer = self.ai.chat(query, context_str)
+        total_chars = 0
         
-        return {
-            "response": answer,
-            "references": list(set(references)),
-            "status": "success"
-        }
+        for _, row in results.iterrows():
+            chunk_text = row['content']
+            score = row.get('smart_score', 0)
+            # Give more space to high-scoring chunks
+            max_chunk_len = 800 if score >= 10 else 400
+            chunk_text = chunk_text[:max_chunk_len]
+            
+            if total_chars + len(chunk_text) > MAX_CONTEXT:
+                break
+            
+            ref = f"{row['source']} | {row['location']}"
+            context_blocks.append(f"[{ref}]: {chunk_text}")
+            references.append(ref)
+            total_chars += len(chunk_text)
+
+        context = "\n".join(context_blocks)
+        
+        # 5. ULTRA-STRICT PROMPT
+        system_prompt = (
+            "You are IITU Academic Assistant.\n"
+            "ABSOLUTE RULES:\n"
+            "1. Answer ONLY from context\n"
+            "2. CITE [Source | Location] for every fact\n"
+            "3. If NOT in context: 'Not found in materials'\n"
+            "4. Be concise (2-4 sentences)\n"
+            "5. NO Chinese/Japanese/Korean"
+        )
+        
+        user_msg = f"{context}\n\nQ: {query}"
+        answer = self.llm.chat(system_prompt, user_msg)
+        
+        # 6. SAVE TO SQLITE CACHE with Embedding
+        unique_refs = list(dict.fromkeys(references))
+        self.cache.set(query, answer, unique_refs, embedding=vector)
+        
+        return ChatResponse(
+            response=answer,
+            references=unique_refs,
+            status=f"generated_{budget['mode']}" # Log efficient mode
+        )
+    
+    def get_cache_stats(self):
+        """Get cache statistics for monitoring."""
+        return self.cache.get_stats()

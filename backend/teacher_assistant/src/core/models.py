@@ -1,14 +1,16 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
-class TutorRecord(BaseModel):
-    tutor: str
-    topic: str
+class KnowledgeChunk(BaseModel):
     content: str
+    source: str
+    location: str
     vector: Optional[List[float]] = None
 
-class RAGResponse(BaseModel):
-    query: str
+class ChatRequest(BaseModel):
+    message: str
+
+class ChatResponse(BaseModel):
     response: str
     references: List[str]
-    confidence_score: float
+    status: str = "success"

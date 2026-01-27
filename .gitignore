@@ -50,6 +50,25 @@ backend/myenv/
 .env.*
 !.env.example
 
+# Databases & Production Data
+simple_lancedb/
+performance_test_db/
+lecture_db/
+"Управление разработкой программного обеспечения и реинжиниринг"/
+big_lecture.txt
+dummy.json
+backend/super_precise_db/
+backend/smart_cache.db
+backend/smart_cache.db-shm
+backend/smart_cache.db-wal
+backend/scripts/debug_*.txt
+*.db
+*.lancedb
+ollama_models.xlsx
+Управление разработкой программного обеспечения и реинжиниринг/
+
+
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

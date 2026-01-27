@@ -1,37 +1,82 @@
 import lancedb
 import pandas as pd
 import os
-from typing import List
+import re
+from typing import List, Dict, Any
+from functools import lru_cache
 
-class VectorStore:
-    def __init__(self, path="./teacher_assistant/data/lancedb_index"):
-        self.path = path
-        self.db = lancedb.connect(self.path)
-        self.table_name = "tutors_v3"
+class VectorDatabase:
+    def __init__(self, db_path="./super_precise_db"):
+        self.db_path = db_path
+        self.table_name = "knowledge_base"
+        os.makedirs(db_path, exist_ok=True)
+        self.db = lancedb.connect(db_path)
+        self._filename_cache = {}  # Cache for filename lookups
 
-    def index_data(self, data: List[dict]):
-        df = pd.DataFrame(data)
-        # Ensure 'vector' column exists if you are providing pre-computed embeddings
-        # but LanceDB can also handle embeddings via its API. 
-        # For simplicity in this clean arch, we'll assume the df has a 'vector' column.
-        
-        # Create table with FTS (Full Text Search) index
-        tbl = self.db.create_table(self.table_name, data=df, mode="overwrite")
-        tbl.create_fts_index("content", replace=True) # Essential for name precision
-        print(f"Indexed {len(data)} items into {self.table_name}")
+    def insert_chunks(self, chunks: List[Dict[str, Any]]):
+        if not chunks:
+            return
+        tbl = self.db.create_table(self.table_name, data=chunks, mode="overwrite")
+        tbl.create_fts_index("content", replace=True)
+        # Build filename cache
+        self._filename_cache = {}
+        for c in chunks:
+            fname = c['source'].lower()
+            if fname not in self._filename_cache:
+                self._filename_cache[fname] = []
 
-    def search(self, query_vec: List[float], query_text: str, limit=5):
+    def search(self, vector: List[float], limit: int = 10) -> pd.DataFrame:
         if self.table_name not in self.db.table_names():
             return pd.DataFrame()
-            
+        tbl = self.db.open_table(self.table_name)
+        return tbl.search(vector).limit(limit).to_pandas()
+
+    def smart_search(self, vector: List[float], query: str, limit: int = 12) -> pd.DataFrame:
+        """ULTRA-SMART: Vector search + keyword boost + filename priority."""
+        if self.table_name not in self.db.table_names():
+            return pd.DataFrame()
+        
         tbl = self.db.open_table(self.table_name)
         
-        # Hybrid Search: Vector (Semantic) + Metadata Filtering via SQL-like 'where'
-        # We also boost exact keyword matches by using FTS in the search
-        results = (
-            tbl.search(query_vec)
-            .where(f"content LIKE '%{query_text}%'", prefilter=False)
-            .limit(limit)
-            .to_pandas()
+        # 1. Get more candidates for re-ranking
+        results = tbl.search(vector).limit(limit * 5).to_pandas()
+        
+        if results.empty:
+            return results
+        
+        # 2. SMART SCORING: Combine multiple signals
+        query_lower = query.lower()
+        query_words = [w for w in re.split(r'\W+', query_lower) if len(w) > 2]
+        
+        def smart_score(row):
+            content = row['content'].lower()
+            source = row['source'].lower()
+            score = 0
+            
+            # Keyword match bonus (highest priority)
+            for word in query_words:
+                if word in content:
+                    score += 3
+                if word in source:  # Filename match = HUGE boost
+                    score += 25
+            
+            # Exact phrase match
+            if query_lower[:20] in content:
+                score += 5
+            
+            return score
+        
+        results['smart_score'] = results.apply(smart_score, axis=1)
+        
+        # 3. Sort by smart score, then by vector distance
+        results = results.sort_values(
+            by=['smart_score', '_distance'],
+            ascending=[False, True]
         )
-        return results
+        
+        return results.head(limit)
+
+    def count(self) -> int:
+        if self.table_name not in self.db.table_names():
+            return 0
+        return len(self.db.open_table(self.table_name))
