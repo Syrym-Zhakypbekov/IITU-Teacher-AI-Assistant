@@ -10,10 +10,10 @@ class SmartCostManager:
     def __init__(self):
         # Queries that don't need RAG
         self.skip_patterns = [
-            r"^(hi|hello|hey|greetings|hola)\s*[\.!]*$",
-            r"^(who are you\??|what are you\??)$",
-            r"^test$",
-            r"^ping$"
+            r"^(hi|hello|hey|greetings|hola|welcome|привет|здравствуйте).*", 
+            r"^(who are you|what are you|кто ты|что ты).*",
+            r"^test.*",
+            r"^ping.*"
         ]
         
     def should_skip_rag(self, query: str) -> bool:

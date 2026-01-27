@@ -10,7 +10,7 @@ def run_test():
     # 1. Health Check
     try:
         health = requests.get(f"{BASE_URL}/health").json()
-        print(f"Status: {health['status']} | DB Size: {health['database_size']} chunks")
+        print(f"Status: {health['status']} | DB Docs: {health['database_docs']} | Version: {health.get('version', '1.0')}")
     except Exception as e:
         print(f"❌ Server not running! {e}")
         return

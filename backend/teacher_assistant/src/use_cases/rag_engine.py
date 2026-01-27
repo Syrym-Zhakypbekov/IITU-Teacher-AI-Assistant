@@ -15,7 +15,8 @@ class RAGService:
     def answer_question(self, query: str, force_cache_only: bool = False) -> ChatResponse:
         # 0. COST CHECK: Skip RAG for simple greetings
         if self.cost_manager.should_skip_rag(query):
-            simple_response = self.llm.chat("You are a helpful assistant.", query)
+            simple_system = "You are a helpful academic assistant. Answer briefly in the SAME language as the user (Russian or English)."
+            simple_response = self.llm.chat(simple_system, query)
             return ChatResponse(
                 response=simple_response,
                 references=[],
