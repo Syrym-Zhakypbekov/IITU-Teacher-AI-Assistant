@@ -235,7 +235,8 @@ async def chat(request: ChatRequest, raw_request: Request):
         
         # 5. Process Request
         response = rag_service.answer_question(
-            request.message, 
+            request.message,
+            history=request.history, 
             force_cache_only=force_cache,
             is_voice=request.is_voice
         )

@@ -12,8 +12,9 @@ class RAGService:
         self.cache = cache  # Injected persistent cache
         self.cost_manager = SmartCostManager() # Brain for efficiency
 
-    def answer_question(self, query: str, force_cache_only: bool = False, is_voice: bool = False) -> ChatResponse:
-        # 0. ALLOCATE BUDGET (Dynamic Resource Management)
+    def answer_question(self, query: str, history: list = [], force_cache_only: bool = False, is_voice: bool = False) -> ChatResponse:
+        # 0. ALLOCATE BUDGET
+        # ... (rest of logic) ...
         # We need this early to determine if we skip RAG or optimize for voice
         output_budget = self.cost_manager.determine_output_budget(is_voice)
 
@@ -52,8 +53,20 @@ class RAGService:
         # 4. SMART RETRIEVE
         results = self.db.smart_search(vector, query, limit=12)
         
+        # 4.1 NOISE FILTER (Anti-Hallucination)
+        # If the best result is too distinct (distance > threshold) or score is low, ignore it.
+        # This prevents "Translate it" from grabbing random slides.
+        if not results.empty:
+             # Assuming smart_search returns 'distance' (lower is better) or we rely on 'smart_score' (higher is better)
+             # Let's use a strict check. If the best 'smart_score' is < 15 (arbitrary, based on exploration), drop it.
+             best_score = results.iloc[0].get('smart_score', 0)
+             if best_score < 40: # STRICTER THRESHOLD
+                 results = pd.DataFrame() # Drop all
+        
         if results.empty:
-            return ChatResponse(response="Context not found.", references=[], status="no_context")
+            # Fallback to pure chat if no relevant docs found
+            # But we still want to pass history for context!
+            pass 
 
         # 5. DYNAMIC BUDGET ALLOCATION
         budget = self.cost_manager.allocate_budget(results, is_voice=is_voice)
@@ -79,26 +92,57 @@ class RAGService:
 
         context = "\n".join(context_blocks)
         
-        # 6. VOICE-AWARE PROMPT
+        # 6. ADVANCED SYSTEM PROMPT (User requested "Super Smart Flexible Brain")
+        # We define a "Hybrid Mode" where it prioritizes context but falls back to general knowledge gracefully.
+        
         system_prompt = (
-            f"You are IITU Academic Assistant. Mode: {budget['output']['mode']}.\n"
-            "ABSOLUTE RULES:\n"
-            "1. Answer ONLY from context\n"
-            "2. CITE [Source | Location]\n"
-            f"3. LENGTH: MAX {budget['output']['max_sentences']} sentences.\n"
-            f"4. COMPLEXITY: {budget['output']['complexity']}.\n"
-            "5. NO Chinese/Japanese/Korean."
+            "You are an expert Academic Mentor at IITU. Your goal is to help students learn efficiently.\n\n"
+            
+            "### INSTRUCTIONS:\n"
+            "1. **Synthesize & Explain**: You are a teacher, not a search engine.\n"
+            "   - **DO NOT** just say 'The answer is in Slide X'.\n"
+            "   - **Explain the concept fully** in your own words based on the context.\n"
+            "   - Use the materials to form a comprehensive answer.\n"
+            
+            "2. **Citations**: Support your explanation with evidence.\n"
+            "   - After explaining a point, add the citation `[Source | Slide X]`.\n"
+            "   - Example: 'Requirements engineering is the process of defining, documenting, and maintaining software requirements. It ensures the final product meets stakeholder needs [Lecture 1, Slide 5].'\n"
+            
+            "3. **General Knowledge & Chat**:\n"
+            "   - IF the question is general (e.g., 'What is 2+2?') AND context is missing -> Answer generally WITHOUT citations.\n"
+            "   - IF the user asks to **translate** the previous message -> Translate the conversation history, ignore the document context.\n"
+            "   - **CRITICAL**: Never fake a citation.\n"
+            
+            "4. **Tone & Style**:\n"
+            "   - Be helpful, encouraging, and professional.\n"
+            "   - Use Markdown lists and bold text for readability.\n"
+            
+            f"5. **CONSTRAINTS**:\n"
+            f"   - Max Complexity: {budget['output']['complexity']}.\n"
+            "   - Language: Same as User.\n"
         )
         
         if is_voice:
              system_prompt += (
-                 "\nAUDIO MODE ENABLED: "
-                 "- Avoid all markdown (NO **bolding**, NO bullet points).\n"
-                 "- Use conversational word-based transitions.\n"
-                 "- Ensure punctuation is smooth for professional text-to-speech rhythm."
+                 "\n### VOICE MODE OVERRIDE:\n"
+                 "- Do NOT use markdown formatting (no bold, no lists).\n"
+                 "- Write in a conversational script format suitable for TTS reading.\n"
+                 "- Keep sentences short and rhythmic."
              )
         
-        user_msg = f"{context}\n\nQ: {query}"
+        
+        # 6.5 INJECT CONVERSATION MEMORY (Smart Sliding Window)
+        # We only take the last 4 messages to keep it CPU/Memory efficient.
+        memory_block = ""
+        if history:
+            recent_history = history[-4:] 
+            memory_block = "PREVIOUS CONVERSATION (Use for context, but prioritize [CONTEXT] above):\n"
+            for msg in recent_history:
+                role = "User" if msg['role'] == 'user' else "AI"
+                memory_block += f"{role}: {msg['content']}\n"
+            memory_block += "\n"
+
+        user_msg = f"{memory_block}{context}\n\nQ: {query}"
         answer = self.llm.chat(system_prompt, user_msg)
         
         # 7. SAVE TO CACHE

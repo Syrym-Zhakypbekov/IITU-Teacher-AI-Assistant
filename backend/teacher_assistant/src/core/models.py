@@ -12,6 +12,7 @@ class ChatRequest(BaseModel):
     course_id: str
     is_voice: bool = False
     ticket_id: Optional[str] = None
+    history: List[dict] = [] # New field for conversation history
 
 class ChatResponse(BaseModel):
     response: str

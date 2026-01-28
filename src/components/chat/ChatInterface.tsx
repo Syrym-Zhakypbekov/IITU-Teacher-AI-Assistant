@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Send, User, Bot, Sparkles, MoveLeft, Volume2, VolumeX, History, Plus, MessageSquare } from 'lucide-react';
 import { db } from '../../db';
 import { Button } from '../ui/Button';
+import { MessageContent } from './MessageContent';
 
 interface Message {
   id: string;
@@ -131,7 +132,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ courseId, courseNa
           message: currentInput,
           course_id: courseId,
           is_voice: currentAudioMode,
-          ticket_id: ticketId 
+          ticket_id: ticketId,
+          history: messages.map(m => ({ role: m.role, content: m.content })).slice(-6) 
         }),
       });
 
@@ -279,7 +281,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ courseId, courseNa
                 {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
               </div>
               <div className={`p-5 rounded-2xl shadow-sm ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-tl-none border border-slate-200 dark:border-slate-800'}`}>
-                <p className="text-[15px] leading-relaxed font-medium">{msg.content}</p>
+                <MessageContent content={msg.content} role={msg.role} />
                 <p className="text-[10px] mt-3 font-bold opacity-40 uppercase tracking-widest">{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
               </div>
             </div>
