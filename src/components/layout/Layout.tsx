@@ -2,6 +2,7 @@ import { GraduationCap, ArrowRight, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { Button } from '../ui/Button';
+import { TranslateWidget } from '../system/TranslateWidget';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -50,7 +51,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, onOpenSystem, onNaviga
               </a>
             </div>
             
-            <ThemeToggle />
+            
+            <div className="flex items-center gap-2">
+               <TranslateWidget />
+               <ThemeToggle />
+            </div>
             
             {onOpenSystem && (
               <div className="flex items-center gap-2">
