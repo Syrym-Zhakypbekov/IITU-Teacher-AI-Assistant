@@ -1,0 +1,70 @@
+[
+  {
+    "question": "What are the recommended tools for project management in this course?",
+    "answer": "Based on the provided slides, the course utilizes a hierarchical structure of work (ИСР) [Slide 21, Slide 18] as a key tool for managing software projects. Additionally, the course covers aspects of project management including the life cycle of a software project [Slide 6, Slide 15], and critical path analysis [Slide 24]. The course also emphasizes the organization of a project team [Slide 12] and the delivery and installation of software [Slide 16].\n\n_[Cached response]_",
+    "references": [
+      "9 - project management.pptx | Slide 1: Основные понятия управления проектом",
+      "9 - project management.pptx | Slide 8: 2. Фаза разработки - разрабатываются основные комп",
+      "9 - project management.pptx | Slide 13: Управление программными проектами",
+      "9 - project management.pptx | Slide 15: Жизненный цикл и основные продукты программного пр",
+      "9 - project management.pptx | Slide 21: Управление программными проектами",
+      "9 - project management.pptx | Slide 6: Жизненный цикл проекта",
+      "9 - project management.pptx | Slide 12: Организация проектной команды",
+      "9 - project management.pptx | Slide 3: Направленность на достижение целей",
+      "9 - project management.pptx | Slide 16: Управление программными проектами",
+      "9 - project management.pptx | Slide 24: Критический путь ",
+      "9 - project management.pptx | Slide 18: Управление программными проектами"
+    ],
+    "status": "cached"
+  },
+  {
+    "question": "Что такое ожидаемый и фактический результат в контексте отчетов о дефектах?",
+    "answer": "According to the provided slides, the expected result is the behavior of the system as described in the requirements [Slide 2]. Conversely, the actual result is the observed behavior during testing [Slide 2]. A defect, as defined, is a discrepancy between the expected and actual results [Slide 2]. Specifically, the report details a crash of the client application when attempting to open a file, leading to session loss [Slide 16].\n\n_[Cached response]_",
+    "references": [
+      "8 - Отчеты о дефектах.pptx | Slide 16: Конечный вариант подробного описания: ",
+      "8 - Отчеты о дефектах.pptx | Slide 2: Ошибки, дефекты, сбои, отказы и т.д. ",
+      "8 - Отчеты о дефектах.pptx | Slide 69: Техническая безграмотность"
+    ],
+    "status": "cached"
+  },
+  {
+    "question": "Explain the impact of changes on the project and the end user.",
+    "answer": "According to Slide 4 of the “Concept of Requirements” presentation [1], changes impact both the project and the end user [1]. Change management processes and methods are essential for addressing these impacts [1]. These processes consider the consequences of changes on the project’s timeline, budget, and resources [1]. Furthermore, the end user’s experience is directly affected by changes, necessitating careful consideration [1].\n\n_[Cached response]_",
+    "references": [
+      "1 - The concept of requirements.pptx | Slide 4: Semester work plan (approximate)",
+      "1 - The concept of requirements.pptx | Slide 6: Approximate plan for the implementation of project",
+      "3 - User Story.pptx | Slide 8: A user story is the smallest unit of work in agile"
+    ],
+    "status": "cached"
+  },
+  {
+    "question": "Из-за каких внешних условий могут возникать отказы в системе?",
+    "answer": "Due to changes in technology and data, such as new versions of operating systems, distributed systems can experience failures [7 - Тестирование.pptx | Slide 12: 8]. Additionally, network traffic fluctuations and processor failures can cause nodes to appear and disappear [5 - Диаграммы Развертывания.pptx | Slide 20: Полностью распределенная система]. [8 - Отчеты о дефектах.pptx | Slide 16: Конечный вариант подробного описания:] The actual result is the absence of correctness checks for opening client application files (including empty ones) which leads to client crashes and irreversible loss of the current server session (see BR852345).\n\n_[Cached response]_",
+    "references": [
+      "8 - Отчеты о дефектах.pptx | Slide 16: Конечный вариант подробного описания: ",
+      "7 - Тестирование.pptx | Slide 13: 9",
+      "7 - Тестирование.pptx | Slide 12: 8",
+      "Управление разработкой ПО - Часть 1.Требования к ПО.pptx | Slide 107: Пример",
+      "Управление разработкой ПО - Часть 1.Требования к ПО.pptx | Slide 82: Триггер <то, что \"запускает\" вариант использования",
+      "5 - Диаграммы Развертывания.pptx | Slide 20: Полностью распределенная система",
+      "Юзабилити тестирование ПО.pdf | Page 67",
+      "5 - Диаграммы Развертывания.pptx | Slide 18: Моделирование клиент-серверной системы осуществляе",
+      "8 - Отчеты о дефектах.pptx | Slide 67: Чрезмерно заниженные (или завышенные) важность и с",
+      "6 - Тестирование документации и требований.pptx | Slide 8: Документацию можно разделить на два больших вида в",
+      "7 - Тестирование.pptx | Slide 20: 16",
+      "5 - Диаграммы Развертывания.pptx | Slide 16: Клиент-серверная система"
+    ],
+    "status": "cached"
+  },
+  {
+    "question": "What is the point rating system for laboratory work?",
+    "answer": "The point rating system for laboratory work includes completing the laboratory work with a value of 100 [Slide 3: Point rating system]. Additionally, border control (1 and 2) also contributes to the overall score with a value of 100 [Slide 3: Point rating system]. The exam will be conducted as a project work defense [Slide 3: Point rating system]. Furthermore, laboratory work aims to develop a detailed business process model for enhanced understanding of requirements [Slide 7: Laboratory work]. [Practical work 2 - business process modeling.pptx | Slide 7: Laboratory work]\n\n_[Cached response]_",
+    "references": [
+      "1 - The concept of requirements.pptx | Slide 3: Point rating system",
+      "Practical work 7 - Testing requirements - eng.docx | Section 21",
+      "Practical work 7 - Testing requirements - eng.docx | Section 18",
+      "Practical work 2 - business process modeling.pptx | Slide 7: Laboratory work"
+    ],
+    "status": "cached"
+  }
+]

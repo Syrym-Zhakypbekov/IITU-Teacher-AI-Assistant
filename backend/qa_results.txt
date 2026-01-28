@@ -1,0 +1,23 @@
+C:\Users\syrym\Downloads\IITU-Teacher-AI-Assistant\backend\myenv\Lib\site-packages\pydantic\_internal\_fields.py:132: UserWarning: Field "model_name" in ColPaliEmbeddings has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+C:\Users\syrym\Downloads\IITU-Teacher-AI-Assistant\backend\myenv\Lib\site-packages\pydantic\_internal\_fields.py:132: UserWarning: Field "model_name" in SigLipEmbeddings has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+Starting QA Test Session with Gemma 3 4B...
+
+Question: What are the recommended tools for project management in this course?
+Time: 0.08s
+Traceback (most recent call last):
+  File "C:\Users\syrym\Downloads\IITU-Teacher-AI-Assistant\backend\run_qa_test.py", line 70, in <module>
+    run_qa()
+    ~~~~~~^^
+  File "C:\Users\syrym\Downloads\IITU-Teacher-AI-Assistant\backend\run_qa_test.py", line 51, in run_qa
+    print(f"Answer: {response.response}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Syrym\miniconda3\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 92-94: character maps to <undefined>

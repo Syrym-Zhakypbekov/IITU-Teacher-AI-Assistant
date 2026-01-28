@@ -4,10 +4,12 @@ import os
 import re
 
 class OllamaClient:
-    def __init__(self):
-        self.embed_model = "nomic-embed-text"
-        # UPGRADED: 2x smarter than 0.5b, still fast on CPU
-        self.chat_model = "qwen2.5-coder:0.5b-instruct-fp16"
+    def __init__(self, base_url="http://localhost:11434"):
+        self.base_url = base_url
+        # USER REQUESTED CPU OPTIMIZATION (2026-01-28)
+        self.chat_model = "gemma3:4b"
+        self.embed_model = "embeddinggemma:300m"
+        self.timeout = 120.0 # Relaxed for CPU
 
     def get_embedding(self, text: str) -> List[float]:
         # BLAZING FAST: Using GPU for single embedding
